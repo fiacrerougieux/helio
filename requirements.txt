@@ -1,0 +1,27 @@
+# Core simulation dependencies
+pvlib>=0.14.0,<0.15.0
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0,<3.0.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+
+# HTTP client for Ollama
+requests>=2.31.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Data validation
+pydantic>=2.0.0
+
+# CLI and formatting
+rich>=13.0.0
+click>=8.1.0
+
+# Fine-tuning (optional, install separately)
+# torch>=2.1.0
+# transformers>=4.36.0
+# unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
+# xformers
+# trl
+# datasets

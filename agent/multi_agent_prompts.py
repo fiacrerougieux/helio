@@ -39,6 +39,26 @@ Router: {
   "reasoning": "Comparison of two tilt angles - needs multiple simulations then comparison"
 }
 
+User: "What's the clipping loss for a 10kW DC / 8kW AC inverter?"
+Router: {
+  "route": "simulate",
+  "task_type": "other",
+  "period": "365 days",
+  "needs_python": true,
+  "notes": ["Clipping loss calculation - DC/AC ratio analysis"],
+  "reasoning": "User asks about inverter clipping loss - requires simulation with oversized DC array"
+}
+
+User: "How does temperature affect output in Dubai?"
+Router: {
+  "route": "simulate",
+  "task_type": "other",
+  "period": "365 days",
+  "needs_python": true,
+  "notes": ["Temperature loss analysis for hot climate"],
+  "reasoning": "User asks about temperature effects - requires simulation with temperature modeling"
+}
+
 User: "thanks"
 Router: {
   "route": "ack",
