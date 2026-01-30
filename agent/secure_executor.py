@@ -269,6 +269,7 @@ class SecureExecutor(PythonExecutor):
 
         # Create temporary files
         code_file = self.temp_dir / f"code_{hash(code) % 10000}.py"
+        output_file = self.temp_dir / f"output_{hash(code) % 10000}.json"
 
         try:
             code_file.write_text(code, encoding='utf-8')
@@ -347,6 +348,8 @@ class SecureExecutor(PythonExecutor):
             # Cleanup
             if code_file.exists():
                 code_file.unlink()
+            if output_file.exists():
+                output_file.unlink()
 
     def _parse_json_output(self, stdout: str) -> Optional[Dict]:
         """Extract JSON from stdout."""
