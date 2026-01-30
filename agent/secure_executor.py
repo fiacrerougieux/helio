@@ -107,6 +107,18 @@ class SecureExecutor(PythonExecutor):
         if self.venv_path and self.venv_path.exists():
             venv_abs = self.venv_path.resolve()
             cmd.extend(["--ro-bind", str(venv_abs), str(venv_abs)])
+        
+        # Bind user site-packages if strictly needed (for non-venv usage on Linux)
+        try:
+            import site
+            user_site = Path(site.getusersitepackages())
+            if user_site.exists():
+                # Only bind if it's not already covered (starts with /home)
+                # We strictly assume /home is hidden by default in our sandbox
+                user_site_abs = user_site.resolve()
+                cmd.extend(["--ro-bind", str(user_site_abs), str(user_site_abs)])
+        except:
+            pass
 
         # Bind code file as read-only
         code_abs = code_file.resolve()
