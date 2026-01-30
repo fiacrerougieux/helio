@@ -16,8 +16,7 @@
 
 </div>
 
-<br>
-
+<br>**Requires Python 3.11+**
 ## What is Helio?
 
 Helio is a multi-agent AI system that turns natural language questions into real solar PV simulations. Under the hood, it writes [pvlib-python](https://pvlib-python.readthedocs.io/) code, runs it in a secure sandbox, validates the physics, and explains the results back to you.

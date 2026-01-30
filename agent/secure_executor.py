@@ -163,7 +163,12 @@ class SecureExecutor(PythonExecutor):
 
 ; Allow Python execution
 (allow process-exec
-    (literal "{self.python_exe}"))
+    (literal "{self.python_exe}")
+    (literal "{Path(self.python_exe).resolve()}"))
+
+; Allow reading the python binary (essential for Homebrew/Conda)
+(allow file-read*
+    (literal "{Path(self.python_exe).resolve()}"))
 
 ; Deny network
 (deny network*)
