@@ -464,4 +464,6 @@ print(json.dumps(result))
             return True
         else:
             print(f"ERROR Secure executor test failed: {result.get('error')}")
+            if result.get('stderr'):
+                print(f"STDERR:\n{result.get('stderr')}")
             return False
