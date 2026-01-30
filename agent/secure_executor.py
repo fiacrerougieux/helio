@@ -118,9 +118,18 @@ class SecureExecutor(PythonExecutor):
         # Need to bind parent dir as writable for output
         cmd.extend(["--bind", str(output_parent), str(output_parent)])
 
-        # Execute Python
+        # Bind the Python executable itself (it might be in /usr, /bin, or elsewhere)
+        python_path = Path(str(self.python_exe)).resolve()
+        cmd.extend(["--ro-bind", str(python_path), str(python_path)])
+        
+        # If it's a symlink (like /usr/bin/python3 -> /usr/bin/python3.10), bind the target too
+        if python_path.is_symlink() or Path(str(self.python_exe)).is_symlink():
+            real_path = python_path.resolve()
+            cmd.extend(["--ro-bind", str(real_path), str(real_path)])
+
+        # Execute Python (using the absolute path)
         cmd.extend([
-            str(self.python_exe),
+            str(python_path),
             str(code_abs)
         ])
 
