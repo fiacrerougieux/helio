@@ -162,13 +162,24 @@ class SecureExecutor(PythonExecutor):
     (subpath "/private/var"))
 
 ; Allow Python execution
+; Allow Python execution
 (allow process-exec
     (literal "{self.python_exe}")
-    (literal "{Path(self.python_exe).resolve()}"))
+    (literal "{Path(self.python_exe).resolve()}")
+    (subpath "{Path(self.python_exe).resolve().parent}"))
 
-; Allow reading the python binary (essential for Homebrew/Conda)
+; Allow reading the python binary and its directory
 (allow file-read*
-    (literal "{Path(self.python_exe).resolve()}"))
+    (literal "{Path(self.python_exe).resolve()}")
+    (subpath "{Path(self.python_exe).resolve().parent}"))
+
+; Allow Homebrew paths if detected (robustness for symlinks)
+(allow process-exec
+    (subpath "/opt/homebrew")
+    (subpath "/usr/local"))
+(allow file-read*
+    (subpath "/opt/homebrew")
+    (subpath "/usr/local"))
 
 ; Deny network
 (deny network*)
