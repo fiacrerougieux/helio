@@ -161,6 +161,15 @@ class SecureExecutor(PythonExecutor):
     (subpath "/usr")
     (subpath "/private/var"))
 
+; Allow /dev access (required for Python startup, random, etc)
+(allow file-read*
+    (subpath "/dev"))
+(allow file-write*
+    (literal "/dev/null")
+    (literal "/dev/zero")
+    (literal "/dev/dtracehelper")
+    (literal "/dev/tty"))
+
 ; Allow Python execution
 ; Allow Python execution
 (allow process-exec
