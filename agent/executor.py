@@ -89,7 +89,6 @@ class PythonExecutor:
                 else:
                     raise FileNotFoundError(f"Python executable not found at {venv_exe} or {system_exe}")
         else:
-        else:
             # Fall back to current interpreter
             import sys
             self.python_exe = sys.executable
