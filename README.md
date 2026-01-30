@@ -10,8 +10,9 @@
 
 <br>
 
-<video src="demo.mp4" controls="controls" style="max-width: 100%;">
-</video>
+### [🎥 Watch the Demo Video](demo.mp4)
+
+*(Click to play)*
 
 <sub>*A real Helio session -- from question to validated result in seconds.*</sub>
 
