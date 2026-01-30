@@ -49,8 +49,11 @@ class SecureExecutor(PythonExecutor):
         self.sandbox_config_dir = Path.home() / ".sun-sleuth" / "sandbox"
 
         if not self.sandbox_available:
-            print("⚠️  OS-level sandbox not available, using basic subprocess isolation.")
-            print("   Run: python scripts/install_sandbox.py")
+            if self.system == "linux":
+                print("Warning: OS-level sandbox not available, using basic subprocess isolation.")
+                print("   Install Bubblewrap: sudo apt install bubblewrap")
+            else:
+                print("Warning: OS-level sandbox not available, using basic subprocess isolation.")
 
     def _check_sandbox_availability(self) -> bool:
         """Check if OS-level sandbox is available."""
@@ -150,53 +153,68 @@ class SecureExecutor(PythonExecutor):
     def _create_macos_sandbox_command(self, code_file: Path, output_file: Path, timeout: int) -> List[str]:
         """Build macOS sandbox-exec command."""
 
+        python_resolved = str(Path(self.python_exe).resolve())
+        python_parent = str(Path(self.python_exe).resolve().parent)
+
+        # Build venv read rule only if venv_path is set
+        venv_rule = ""
+        if self.venv_path:
+            venv_rule = f"""
+; Allow reading venv
+(allow file-read*
+    (subpath "{self.venv_path}"))
+"""
+
         # Create sandbox profile
         profile = f"""(version 1)
 (deny default)
+
+; Allow process forking and execution (required for Python startup)
+(allow process-fork)
+(allow process-exec
+    (literal "{self.python_exe}")
+    (literal "{python_resolved}")
+    (subpath "{python_parent}"))
+
+; Allow Homebrew paths (covers symlink chains through Cellar)
+(allow process-exec
+    (subpath "/opt/homebrew")
+    (subpath "/usr/local"))
+(allow file-read*
+    (subpath "/opt/homebrew")
+    (subpath "/usr/local"))
 
 ; Allow reading system files
 (allow file-read*
     (subpath "/System")
     (subpath "/Library")
     (subpath "/usr")
-    (subpath "/private/var"))
+    (subpath "/private/var")
+    (subpath "/private/etc"))
 
-; Allow /dev access (required for Python startup, random, etc)
+; Allow reading the Python binary and its directory
+(allow file-read*
+    (literal "{python_resolved}")
+    (subpath "{python_parent}"))
+
+; Allow /dev access (required for Python startup, random, urandom, etc)
 (allow file-read*
     (subpath "/dev"))
 (allow file-write*
     (literal "/dev/null")
     (literal "/dev/zero")
     (literal "/dev/dtracehelper")
-    (literal "/dev/tty"))
+    (literal "/dev/tty")
+    (literal "/dev/urandom"))
 
-; Allow Python execution
-; Allow Python execution
-(allow process-exec
-    (literal "{self.python_exe}")
-    (literal "{Path(self.python_exe).resolve()}")
-    (subpath "{Path(self.python_exe).resolve().parent}"))
-
-; Allow reading the python binary and its directory
-(allow file-read*
-    (literal "{Path(self.python_exe).resolve()}")
-    (subpath "{Path(self.python_exe).resolve().parent}"))
-
-; Allow Homebrew paths if detected (robustness for symlinks)
-(allow process-exec
-    (subpath "/opt/homebrew")
-    (subpath "/usr/local"))
-(allow file-read*
-    (subpath "/opt/homebrew")
-    (subpath "/usr/local"))
+; Mach IPC and sysctl (required for Python runtime on macOS)
+(allow mach-lookup)
+(allow sysctl-read)
+(allow mach-priv-host-port)
 
 ; Deny network
 (deny network*)
-
-; Allow reading venv
-(allow file-read*
-    (subpath "{self.venv_path}"))
-
+{venv_rule}
 ; Allow reading code file
 (allow file-read*
     (literal "{code_file}"))
@@ -205,9 +223,13 @@ class SecureExecutor(PythonExecutor):
 (allow file-write*
     (literal "{output_file}"))
 
-; Allow temp directory
+; Allow temp directory access (read + write)
+(allow file-read*
+    (subpath "/private/tmp")
+    (subpath "/tmp"))
 (allow file-write*
-    (subpath "/private/tmp"))
+    (subpath "/private/tmp")
+    (subpath "/tmp"))
 """
 
         # Write profile to temp file
@@ -332,7 +354,7 @@ class SecureExecutor(PythonExecutor):
                 )
 
             elif self.sandbox_available and self.system == "darwin":
-                # macOS sandbox-exec
+                # macOS sandbox-exec (with fallback if sandbox fails)
                 cmd = self._create_macos_sandbox_command(code_file, output_file, timeout)
                 result = subprocess.run(
                     cmd,
@@ -340,6 +362,16 @@ class SecureExecutor(PythonExecutor):
                     timeout=timeout,
                     text=True
                 )
+                # If sandbox-exec itself failed (not the code), fall back to basic execution
+                if result.returncode != 0 and "sandbox-exec" in result.stderr.lower():
+                    print("Warning: macOS sandbox-exec failed, falling back to basic subprocess isolation.")
+                    self.sandbox_available = False
+                    result = subprocess.run(
+                        [str(self.python_exe), str(code_file)],
+                        capture_output=True,
+                        timeout=timeout,
+                        text=True
+                    )
 
             elif self.sandbox_available and self.system == "windows":
                 # Windows subprocess isolation
