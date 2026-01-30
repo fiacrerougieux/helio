@@ -59,8 +59,8 @@ Helio uses [OpenRouter](https://openrouter.ai/) to access LLMs. It takes 30 seco
 
 ```bash
 # Clone the repo
-git clone https://github.com/fiacrerougieux/helio-public-minimal.git
-cd helio-public-minimal
+git clone https://github.com/fiacrerougieux/helio.git
+cd helio
 
 # Install dependencies
 pip install -e .
