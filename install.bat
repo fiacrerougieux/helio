@@ -43,7 +43,11 @@ echo ========================================
 echo.
 
 REM Configure Windows security (no external deps needed)
-python scripts\install_sandbox.py
+if exist scripts\install_sandbox.py (
+    python scripts\install_sandbox.py
+) else (
+    echo Sandbox configuration script not found, skipping...
+)
 
 if errorlevel 1 (
     echo.
@@ -82,10 +86,10 @@ echo Installation Complete!
 echo ========================================
 echo.
 echo You can now run Sun Sleuth:
-echo   python -m agent.multi_agent_cli
+echo   helio.bat
 echo.
-echo Or use the interactive CLI:
-echo   python agent/multi_agent_cli.py
+echo Or use python directly:
+echo   python helio.py
 echo.
 echo Optional: Set OPENROUTER_API_KEY for cloud LLM access
 echo   set OPENROUTER_API_KEY=your-key-here

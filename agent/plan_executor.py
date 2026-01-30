@@ -307,7 +307,7 @@ class PlanExecutor:
 
         text = f"Comparison result:\n\n"
         for comp in comparisons:
-            marker = "✓ WINNER" if comp.get('is_winner') else ""
+            marker = "<- WINNER" if comp.get('is_winner') else ""
             text += f"- {comp['variant']}: {comp[metric]:.1f} {metric} {marker}\n"
 
         text += f"\nBest configuration: {winner['variant']} with {winner[metric]:.1f} {metric}"

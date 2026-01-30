@@ -2,10 +2,10 @@
 Planner Agent - Decomposes tasks into executable subtasks.
 
 The Planner analyzes task contracts and creates execution plans:
-- SINGLE tasks → 1 simulation subtask
-- COMPARISON tasks → N simulation subtasks (1 per variant) + 1 reduction
-- SWEEP tasks → N simulation subtasks + 1 reduction
-- SENSITIVITY tasks → N simulation subtasks + 1 reduction
+- SINGLE tasks -> 1 simulation subtask
+- COMPARISON tasks -> N simulation subtasks (1 per variant) + 1 reduction
+- SWEEP tasks -> N simulation subtasks + 1 reduction
+- SENSITIVITY tasks -> N simulation subtasks + 1 reduction
 """
 
 from dataclasses import dataclass, field

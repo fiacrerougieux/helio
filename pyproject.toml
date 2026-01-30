@@ -63,8 +63,8 @@ Homepage = "https://github.com/fiacrerougieux/sun-sleuth-dev"
 Repository = "https://github.com/fiacrerougieux/sun-sleuth-dev"
 
 [tool.setuptools]
-packages = ["agent", "training"]
+packages = ["agent", ]
 
 [tool.setuptools.package-data]
 agent = ["*.py"]
-training = ["*.py"]
+

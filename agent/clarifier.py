@@ -29,7 +29,7 @@ OUTPUT: Canonical PV spec JSON + list of assumptions
 Rules:
 1. Extract explicit parameters from user prompt
 2. For missing parameters, choose sensible defaults based on:
-   - Location (e.g., Sydney → tilt≈latitude, azimuth=0 for N hemisphere tilt north)
+   - Location (e.g., Sydney -> tilt~=latitude, azimuth=0 for N hemisphere tilt north)
    - Task type (comparison needs matching schemas, sensitivity needs range)
    - Industry standards (14% system losses, 1.2 DC/AC ratio)
 3. Document ALL assumptions in the "assumptions" field
@@ -40,8 +40,8 @@ Rules:
    - Document temp model choice in assumptions
 
 Location Guidelines:
-- If city name given, infer lat/lon (e.g., "Sydney" → -33.86, 151.21)
-- Infer timezone from location (e.g., Sydney → "Australia/Sydney")
+- If city name given, infer lat/lon (e.g., "Sydney" -> -33.86, 151.21)
+- Infer timezone from location (e.g., Sydney -> "Australia/Sydney")
 - Default altitude to 0 if not specified
 
 Orientation Guidelines:
@@ -54,11 +54,11 @@ Orientation Guidelines:
   * Dual-axis: No tilt/azimuth needed (tracks sun)
 
 Task Type Detection:
-- "annual energy", "yearly output" → ANNUAL_YIELD
-- "compare", "vs", "versus" → COMPARISON
-- "sensitivity", "impact of", "effect of" → SENSITIVITY
-- "capacity factor", "CF" → CAPACITY_FACTOR
-- "monthly", "seasonal" → MONTHLY_PROFILE
+- "annual energy", "yearly output" -> ANNUAL_YIELD
+- "compare", "vs", "versus" -> COMPARISON
+- "sensitivity", "impact of", "effect of" -> SENSITIVITY
+- "capacity factor", "CF" -> CAPACITY_FACTOR
+- "monthly", "seasonal" -> MONTHLY_PROFILE
 
 Output Schema Guidelines:
 - ANNUAL_YIELD: {{"annual_kwh": float, "capacity_factor": float}}
@@ -208,7 +208,7 @@ Output:
     }}
   }},
   "assumptions": [
-    "Rooftop installation → use NOCT as baseline temp model",
+    "Rooftop installation -> use NOCT as baseline temp model",
     "Test sensitivity across temp models: SAPM, PVsyst, Faiman, NOCT",
     "Default 5 kW system (typical residential rooftop)",
     "Phoenix climate (hot, high temp impact)"

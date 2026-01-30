@@ -210,11 +210,11 @@ def interactive_login() -> bool:
     success, location = store_api_key(key)
 
     if success:
-        print(f"\n✓ API key stored securely in: {location}")
+        print(f"\nOK: API key stored securely in: {location}")
         print("\nYou're all set! Run 'helio' to start.")
         return True
     else:
-        print(f"\n✗ Failed to store API key: {location}")
+        print(f"\nERROR: Failed to store API key: {location}")
         return False
 
 
@@ -227,11 +227,11 @@ def show_status():
     print("=" * 60)
 
     if location:
-        print(f"\n✓ API key found in: {location}")
+        print(f"\nOK: API key found in: {location}")
         print("\nTo revoke: helio auth logout")
         print("To update: helio auth login (will overwrite)")
     else:
-        print("\n✗ No API key found")
+        print("\nERROR: No API key found")
         print("\nTo set up: helio auth login")
         print("Or set environment variable: OPENROUTER_API_KEY=sk-or-...")
 

@@ -1,5 +1,5 @@
 """
-Helio - Multi-agent prompts for Router → SimAgent → QAAgent architecture.
+Helio - Multi-agent prompts for Router -> SimAgent -> QAAgent architecture.
 Each agent has a specific role and returns structured JSON.
 """
 
@@ -10,7 +10,7 @@ Your job is to analyze the user's query and return a routing decision.
 Return JSON in this format:
 {
   "route": "simulate|ack|unknown",
-  "task_type": "annual_yield|daily_energy|tilt_compare|tracker_compare|capacity_factor|other",
+  "task_type": "annual_yield|daily_energy|tilt_compare|tracker_compare|capacity_factor|irradiance_compare|temperature_compare|electrical_detail|time_resolution|sensitivity|other",
   "period": "1 day|365 days|custom",
   "needs_python": true|false,
   "notes": ["any clarifications or assumptions"],
@@ -84,14 +84,36 @@ CRITICAL PROTOCOL:
 {"action": "final", "text": "...", "summary": {...}}
 
 PVLIB BEST PRACTICES:
-- **ALWAYS use PVWatts** - pvlib.pvsystem.pvwatts_dc() and pvwatts_losses()
+- **Default to PVWatts** for basic energy calcs: pvlib.pvsystem.pvwatts_dc() and pvwatts_losses()
 - For solar position: location.get_solarposition(times)
 - For clear sky: location.get_clearsky(times, model='ineichen')
 - For POA irradiance: pvlib.irradiance.get_total_irradiance(
     surface_tilt, surface_azimuth,
     solar_zenith, solar_azimuth,  # REQUIRED!
-    dni, ghi, dhi, albedo=0.2
+    dni, ghi, dhi, albedo=0.2,
+    model='isotropic'  # or 'haydavies', 'perez' if user specifies
   )
+
+EXTENDED API KNOWLEDGE (use when the query demands it):
+- Clearsky models: location.get_clearsky(times, model='ineichen') or model='haurwitz'
+  Also: pvlib.clearsky.ineichen(), pvlib.clearsky.haurwitz()
+- Transposition models: get_total_irradiance(..., model='isotropic'|'haydavies'|'perez')
+- Temperature models: pvlib.temperature.sapm_cell(), pvlib.temperature.pvsyst_cell(), pvlib.temperature.faiman()
+  * sapm_cell(poa_global, temp_air, wind_speed, a, b, deltaT) -- use TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
+  * pvsyst_cell(poa_global, temp_air, wind_speed=1, u_c=29.0, u_v=0.0, eta_m=0.1, alpha_absorption=0.9)
+- IAM: pvlib.iam.ashrae(aoi, b=0.05), pvlib.iam.physical(aoi)
+- Trackers: pvlib.tracking.singleaxis(apparent_zenith, apparent_azimuth, axis_tilt=0, axis_azimuth=0, max_angle=90, backtrack=True, gcr=0.35)
+- Single-diode: pvlib.pvsystem.calcparams_cec() or calcparams_desoto(), then pvlib.pvsystem.singlediode()
+- Module DB: pvlib.pvsystem.retrieve_sam('CECMod') or retrieve_sam('SandiaMod')
+- Inverter models: pvlib.inverter.sandia(v_dc, p_dc, inverter), pvlib.inverter.pvwatts(pdc, pdc0, eta_inv_nom=0.96)
+- Irradiance decomposition: pvlib.irradiance.erbs(), pvlib.irradiance.disc()
+- AOI: pvlib.irradiance.aoi(surface_tilt, surface_azimuth, solar_zenith, solar_azimuth)
+- Shading: pvlib.shading.masking_angle_passias(surface_tilt, gcr)
+- Losses: pvlib.pvsystem.pvwatts_losses(soiling=2, shading=3, ...) -- customize individual loss %
+- Atmosphere: pvlib.atmosphere.get_relative_airmass(), pvlib.atmosphere.get_absolute_airmass()
+
+IMPORTANT: If the user asks about a specific pvlib feature (e.g., single-diode model, CEC modules, SAPM,
+tracker backtracking, IAM), DO use the appropriate pvlib API -- don't force everything through PVWatts.
 
 CANONICAL PV SPEC (if provided):
 If context includes "pv_spec", use it as the authoritative source for:
@@ -263,18 +285,28 @@ VALIDATION RULES:
    - Check error messages for "missing argument" or "unexpected keyword"
 
 3. PHYSICS PLAUSIBILITY (LENIENT for edge cases):
-   - Peak AC power should be 70-95% of DC nameplate (e.g., 10 kW DC → 7-9.5 kW AC peak)
+   - Peak AC power should be 70-95% of DC nameplate (e.g., 10 kW DC -> 7-9.5 kW AC peak)
    - Annual energy for 10 kW in Sydney: 10,000-22,000 kWh (wide range for different tilts/locations)
    - Daily energy for 10 kW in Sydney clear day: 30-70 kWh (varies by season/tilt)
    - Capacity factor: 0.10-0.30 (varies widely by location/tilt)
    - For extreme tilts (>60° or <10°): Accept lower output, don't reject
    - For unusual locations: Accept if calculation completes successfully
+   - For irradiance comparisons (POA models, clearsky models): Accept if values are positive and models differ
+   - For temperature model comparisons: Accept 0-15% difference between models as realistic
+   - For tracker/GCR studies: Accept tracker gain of 5-30% over fixed tilt
+   - For single-diode / IV curve results: Accept Pmp, Vmp, Imp if Pmp > 0 and Vmp > 0
+   - For sensitivity sweeps (tilt/azimuth/DC-AC ratio): Accept if trend direction is physically plausible
+   - For error/fallback tests: Accept graceful failure messages or clear-sky fallback
 
 4. RESULT COMPLETENESS:
-   - Annual tasks (365 days): result must have "annual_energy_kwh" key
-   - Daily tasks (24 hours): result must have "daily_kwh" key
-   - Comparison tasks: Accept either separate fields (e.g., "daily_energy_30_tilt_kwh") or "comparisons" array
+   - Annual tasks (365 days): result must have "annual_energy_kwh" or equivalent key
+   - Daily tasks (24 hours): result must have "daily_kwh" or equivalent key
+   - Comparison tasks: Accept separate fields, "comparisons" array, or tabular results
    - If field names are slightly different but semantically correct, APPROVE (e.g., "daily_energy_kwh" instead of "daily_kwh" is acceptable)
+   - For irradiance-only tasks: Accept POA values in W/m2 or kWh/m2
+   - For IV curve tasks: Accept Pmp, Vmp, Imp fields
+   - For sensitivity/sweep tasks: Accept arrays or lists of values across the sweep
+   - For failure-mode tasks: Accept error messages with graceful fallback explanation
 
 Examples:
 

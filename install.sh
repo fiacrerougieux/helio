@@ -89,7 +89,11 @@ esac
 # Run sandbox configuration script
 echo ""
 echo "Configuring sandbox..."
-python3 scripts/install_sandbox.py
+if [ -f "scripts/install_sandbox.py" ]; then
+    python3 scripts/install_sandbox.py
+else
+    echo "Sandbox configuration script not found (skipping)..."
+fi
 
 echo ""
 echo "Step 3/3: Testing installation..."
@@ -121,10 +125,10 @@ echo "Installation Complete!"
 echo "========================================"
 echo ""
 echo "You can now run Sun Sleuth:"
-echo "  python3 -m agent.multi_agent_cli"
+echo "  ./helio.py"
 echo ""
-echo "Or use the interactive CLI:"
-echo "  python3 agent/multi_agent_cli.py"
+echo "Or using python directly:"
+echo "  python3 helio.py"
 echo ""
 echo "Optional: Set OPENROUTER_API_KEY for cloud LLM access"
 echo "  export OPENROUTER_API_KEY=your-key-here"

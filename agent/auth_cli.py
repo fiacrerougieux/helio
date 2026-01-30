@@ -52,9 +52,9 @@ def main():
         print("Helio Logout")
         print("=" * 60)
         if success:
-            print(f"\n✓ {message}")
+            print(f"\nOK: {message}")
         else:
-            print(f"\n✗ {message}")
+            print(f"\nERROR: {message}")
         print("=" * 60 + "\n")
         return 0 if success else 1
 

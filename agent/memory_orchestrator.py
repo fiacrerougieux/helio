@@ -591,7 +591,7 @@ class MemoryCentricOrchestrator:
         current_level = self.memory.fallback_level
 
         if current_level == 1:
-            # Level 1 → Level 2: Try PVWatts simplified model
+            # Level 1 -> Level 2: Try PVWatts simplified model
             self.memory.fallback_level = 2
             self.memory.assumptions.append(
                 f'Fallback to PVWatts: Detailed model failed after {attempts} {error_class} errors'
@@ -613,7 +613,7 @@ class MemoryCentricOrchestrator:
             }
 
         elif current_level == 2:
-            # Level 2 → Level 3: Try constant irradiance approximation
+            # Level 2 -> Level 3: Try constant irradiance approximation
             self.memory.fallback_level = 3
             self.memory.assumptions.append(
                 f'Fallback to constant irradiance: PVWatts failed'
@@ -634,7 +634,7 @@ class MemoryCentricOrchestrator:
             }
 
         elif current_level == 3:
-            # Level 3 → Level 4: Ask user (Phase 3.3 will implement this)
+            # Level 3 -> Level 4: Ask user (Phase 3.3 will implement this)
             self.memory.fallback_level = 4
 
             if self.logger:
@@ -650,7 +650,7 @@ class MemoryCentricOrchestrator:
             }
 
         else:
-            # Level 4 → Level 5: Fail gracefully
+            # Level 4 -> Level 5: Fail gracefully
             self.memory.fallback_level = 5
 
             if self.logger:

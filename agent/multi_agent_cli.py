@@ -63,7 +63,7 @@ PV Simulation Companion
 
     def __init__(
         self,
-        model: str = "openai/gpt-4o-mini",
+        model: str = "anthropic/claude-sonnet-4.5",
         venv_path: Optional[str] = None,
         log_episodes: bool = False,
         episode_dir: Optional[str] = None,
@@ -533,6 +533,13 @@ PV Simulation Companion
                              return {"action": "error", "error": f"Compliance violations: {compliance.violations}"}
                      
                      # If compliant, return the python action
+                     # Use repaired code if syntax was auto-fixed
+                     if compliance.repaired_code is not None:
+                         self.print("[yellow]Compliance: syntax auto-repaired[/yellow]")
+                         result = action_obj.model_dump()
+                         result['code'] = compliance.repaired_code
+                         self.print("[green]Compliance Check Passed[/green]")
+                         return result
                      self.print("[green]Compliance Check Passed[/green]")
                      return action_obj.model_dump()
 
@@ -626,7 +633,7 @@ PV Simulation Companion
         Multi-agent loop with clarification step (Phase 1 self-correction).
 
         Flow:
-        1. Clarifier: Convert user prompt → canonical PV spec JSON
+        1. Clarifier: Convert user prompt -> canonical PV spec JSON
         2. Validate spec completeness
         3. SimAgent: Generate code from spec
         4. Execute and validate
@@ -648,8 +655,8 @@ PV Simulation Companion
                 "local_ack": True
             }
 
-        # Step 1: Clarify user prompt → canonical PV spec
-        self.print("\n[bold cyan]🔍 Clarifying simulation requirements...[/bold cyan]")
+        # Step 1: Clarify user prompt -> canonical PV spec
+        self.print("\n[bold cyan]Clarifying simulation requirements...[/bold cyan]")
 
         try:
             pv_spec, clarification_summary = self.clarifier.clarify(user_message)
@@ -663,7 +670,7 @@ PV Simulation Companion
             }
 
         # Show clarification to user
-        self.print(f"\n[green]📋 Simulation Plan:[/green] {clarification_summary}")
+        self.print(f"\n[green]Simulation Plan:[/green] {clarification_summary}")
         if pv_spec.assumptions:
             self.print(f"[dim]   Assumptions: {', '.join(pv_spec.assumptions[:3])}{'...' if len(pv_spec.assumptions) > 3 else ''}[/dim]")
 
@@ -685,7 +692,12 @@ PV Simulation Companion
         iteration = 0
         qa_feedback = None
         tool_outputs = []
-        session_api_cards = []
+
+        # Pre-seed session API cards with core pvlib signatures
+        try:
+            session_api_cards = self.docs_agent.get_core_cards()
+        except Exception:
+            session_api_cards = []
 
         while iteration < max_iterations:
             iteration += 1
@@ -843,7 +855,15 @@ PV Simulation Companion
         iteration = 0
         qa_feedback = None
         tool_outputs = []
-        session_api_cards = []
+
+        # Pre-seed session API cards with core pvlib signatures
+        # This prevents API mismatch drift (e.g., wrong kwarg names)
+        try:
+            session_api_cards = self.docs_agent.get_core_cards()
+            if session_api_cards:
+                self.print(f"[dim]Pre-loaded {len(session_api_cards)} core API cards[/dim]")
+        except Exception:
+            session_api_cards = []
 
         while iteration < max_iterations:
             iteration += 1
@@ -1113,7 +1133,7 @@ def main():
         description="Helio — AI Companion for Solar PV Simulation",
         epilog="Example: python -m agent.multi_agent_cli --venv sim_runtime/.venv"
     )
-    parser.add_argument("--model", default="openai/gpt-4o-mini", help="OpenRouter model (default: openai/gpt-4o-mini)")
+    parser.add_argument("--model", default="anthropic/claude-sonnet-4.5", help="OpenRouter model (default: anthropic/claude-sonnet-4.5)")
     parser.add_argument("--venv", help="Path to venv with pvlib")
     parser.add_argument("--log-episodes", action="store_true", help="Log episodes")
 

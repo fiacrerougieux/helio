@@ -2,7 +2,7 @@
 Code Builder Agent - Generates pvlib simulation code from canonical PV spec.
 
 Responsibilities:
-1. Convert CanonicalPVSpec JSON → executable Python code
+1. Convert CanonicalPVSpec JSON -> executable Python code
 2. Apply physics-aware heuristics for mesh, solver config
 3. Use domain-specific templates for code generation
 4. Ensure code outputs JSON in expected schema format

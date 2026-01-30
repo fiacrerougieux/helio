@@ -1,11 +1,79 @@
 import ast
-from typing import List, Dict, Set, Tuple
+import textwrap
+from typing import List, Dict, Set, Tuple, Optional
 from agent.schemas.api_cards import APICard
 
 class ComplianceResult:
-    def __init__(self, allowed: bool, violations: List[str]):
+    def __init__(self, allowed: bool, violations: List[str], repaired_code: Optional[str] = None):
         self.allowed = allowed
         self.violations = violations
+        self.repaired_code = repaired_code  # Non-None if syntax was auto-repaired
+
+
+def attempt_syntax_repair(code: str) -> Optional[str]:
+    """
+    Attempt to auto-repair common syntax issues in generated code.
+
+    Tries these strategies in order:
+    1. textwrap.dedent (fixes uniform extra indentation)
+    2. Strip leading whitespace from first non-import line
+       (fixes 'unexpected indent' from LLM artifacts)
+    3. Remove blank/whitespace-only lines that break indentation
+
+    Returns:
+        Repaired code string if repair succeeded (parses cleanly), None otherwise.
+    """
+    # Strategy 1: dedent the whole block
+    dedented = textwrap.dedent(code)
+    try:
+        ast.parse(dedented)
+        return dedented
+    except SyntaxError:
+        pass
+
+    # Strategy 2: find the offending line and try to fix its indentation
+    lines = code.split('\n')
+    # Try parsing incrementally to find the bad line
+    try:
+        ast.parse(code)
+        return code  # Already valid
+    except SyntaxError as e:
+        if e.lineno is not None and 1 <= e.lineno <= len(lines):
+            bad_idx = e.lineno - 1
+            bad_line = lines[bad_idx]
+            stripped = bad_line.lstrip()
+            if stripped:
+                # Try stripping all leading whitespace from the bad line
+                fixed_lines = lines.copy()
+                # Determine expected indent from previous non-empty line
+                expected_indent = ""
+                for i in range(bad_idx - 1, -1, -1):
+                    prev = lines[i]
+                    if prev.strip():
+                        expected_indent = prev[:len(prev) - len(prev.lstrip())]
+                        # If previous line ends with ':', add one indent level
+                        if prev.rstrip().endswith(':'):
+                            expected_indent += "    "
+                        break
+
+                fixed_lines[bad_idx] = expected_indent + stripped
+                fixed_code = '\n'.join(fixed_lines)
+                try:
+                    ast.parse(fixed_code)
+                    return fixed_code
+                except SyntaxError:
+                    pass
+
+    # Strategy 3: remove trailing whitespace and blank lines between statements
+    cleaned = '\n'.join(line.rstrip() for line in lines)
+    try:
+        ast.parse(cleaned)
+        return cleaned
+    except SyntaxError:
+        pass
+
+    return None
+
 
 def check_api_compliance(code: str, allowlist: List[APICard]) -> ComplianceResult:
     """
@@ -41,11 +109,23 @@ def check_api_compliance(code: str, allowlist: List[APICard]) -> ComplianceResul
     # Actually, strict mode: if you use 'pvlib.pvsystem.pvwatts_dc', you must have the card for it.
     
     violations = []
-    
+    syntax_was_repaired = False
+
     try:
         tree = ast.parse(code)
     except SyntaxError as e:
-        return ComplianceResult(False, [f"Syntax Error: {e}"])
+        # Attempt auto-repair before failing
+        repaired = attempt_syntax_repair(code)
+        if repaired is not None:
+            try:
+                tree = ast.parse(repaired)
+                # Repair succeeded - continue compliance check with repaired code
+                code = repaired
+                syntax_was_repaired = True
+            except SyntaxError:
+                return ComplianceResult(False, [f"Syntax Error: {e}"])
+        else:
+            return ComplianceResult(False, [f"Syntax Error: {e}"])
 
     class Visitor(ast.NodeVisitor):
         def visit_Import(self, node):
@@ -112,10 +192,20 @@ def check_api_compliance(code: str, allowlist: List[APICard]) -> ComplianceResul
                          # Potential violation provided it's not just an intermediate module
                          # For example: pvlib.irradiance might not be a "card" but it's a prefix.
                          # If it's NOT a prefix of any card, and NOT a card itself -> Violation.
-                         violations.append(f"Forbidden usage: {full_name}")
+                         #
+                         # Provide targeted feedback for data ingestion modules
+                         if full_name.startswith("pvlib.iotools"):
+                             violations.append(
+                                 f"Forbidden usage: {full_name} "
+                                 "(data ingestion APIs require explicit APICard approval; "
+                                 "use clearsky or pre-loaded weather data instead)"
+                             )
+                         else:
+                             violations.append(f"Forbidden usage: {full_name}")
 
             self.generic_visit(node)
 
     Visitor().visit(tree)
-    
-    return ComplianceResult(len(violations) == 0, violations)
+
+    repaired_code = code if syntax_was_repaired else None
+    return ComplianceResult(len(violations) == 0, violations, repaired_code=repaired_code)
