@@ -34,9 +34,7 @@ Helio> What's the annual energy for a 10 kW rooftop system in Sydney?
    System: 10 kW DC, 30 deg tilt, north-facing
    Model: PVWatts + Ineichen clear-sky
 
-   Result: 14,520 kWh/year
-   Capacity factor: 0.166
-   Peak AC: 8,740 W
+   Result: 20,520 kWh/year
 ```
 
 <br>
