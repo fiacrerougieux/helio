@@ -10,9 +10,7 @@
 
 <br>
 
-### [🎥 Watch the Demo Video](demo.mp4)
-
-*(Click to play)*
+![Helio Demo](demo.gif)
 
 <sub>*A real Helio session -- from question to validated result in seconds.*</sub>
 
