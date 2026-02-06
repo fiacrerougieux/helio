@@ -49,7 +49,7 @@ setup(
     author_email="fiacrerougieux@gmail.com",
     url="https://github.com/fiacrerougieux/sun-sleuth-dev",
     packages=find_packages(exclude=["tests*", "docs*"]),
-    python_requires=">=3.11",
+    python_requires=">=3.9",
     install_requires=[
         "pvlib>=0.14.0,<0.15.0",
         "numpy>=1.24.0,<2.0.0",
@@ -90,9 +90,10 @@ setup(
         "Topic :: Scientific/Engineering",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
     ],
     keywords="solar pv pvlib simulation ai llm agent",
 )
